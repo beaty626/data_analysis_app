@@ -6,4 +6,4 @@ matplotlib==3.4.2
 plotly==4.14.3
 scikit_learn==0.24.2
 opencv-python-headless==4.2.0.32
-tkinter==8.5
+python3-tk
