@@ -5,4 +5,4 @@ keras==2.4.3
 matplotlib==3.4.2
 plotly==4.14.3
 scikit_learn==0.24.2
-python3==3.8
+python3==3.8.10
