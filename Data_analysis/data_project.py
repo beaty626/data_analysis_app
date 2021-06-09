@@ -7,18 +7,23 @@ import time
 import datetime
 from datetime import datetime, date, time
 import matplotlib.pyplot as plt
-#matplotlib inline
-from matplotlib.pylab import rcParams
-rcParams['figure.figsize']=20,10 
+import tkinter
+import matplotlib
+matplotlib.use('TkAgg')
 from keras.models import Sequential
 from keras.layers import LSTM,Dropout,Dense
 
+from keras.layers import *
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
+from keras.callbacks import EarlyStopping
 
 
 
 st.set_page_config(page_title='Survey data 2017-2020.') 
-st.header('Cement Plant data analysis')
+st.header('Cement Plant Down time data analysis')
 st.subheader('Rollerpress data')
 
 
@@ -76,6 +81,9 @@ df_group=df_group.reset_index()
 
 
 #----Plot bar chart
+st.write("Downtime count as per depertment and hours taken")
+
+
 bar_chart = px.bar(df_group,
                     x='DATE',
                     y='Downtime (hrs)',
@@ -86,7 +94,7 @@ bar_chart = px.bar(df_group,
 st.plotly_chart(bar_chart)
 
 
-
+st.write("Downtime hrs line chart")
 df1 = pd.DataFrame({
 
   'date': df['DATE'],
@@ -97,7 +105,7 @@ df1
 
 st.line_chart(df1.rename(columns={'date':'index'}).set_index('index'))
 
-
+st.write("Downtime as per Depertment")
 # column the charts
 col1, col2 = st.beta_columns(2)
 
@@ -118,7 +126,7 @@ st.plotly_chart(col2)
 
 
 
-
+st.write("Downtime as per Incident Category")
 
 # column the charts
 col3, col4 = st.beta_columns(2)
@@ -140,7 +148,7 @@ st.plotly_chart(col4)
 
 
 
-
+st.write("Downtime as per Equipment")
 # column the charts
 col5, col6 = st.beta_columns(2)
 
@@ -180,68 +188,89 @@ plt.plot(df['Downtime (hrs)'],label='Downtime tred')
 
 
 #Data preparation
-df2 = df2.sort_index(ascending=True,axis=0)
-data = pd.DataFrame(index=range(0,len(df2)),columns=['DATE','Downtime (hrs)'])
+#df2 = df2.sort_index(ascending=True,axis=0)
+#data = pd.DataFrame(index=range(0,len(df2)),columns=['DATE','Downtime (hrs)'])
+#
 
 
-
-for i in range(0,len(data)):
-    data["DATE"][i]=df2['DATE'][i]
-    data["Downtime (hrs)"][i]=df2["Downtime (hrs)"][i]
+#for i in range(0,len(data)):
+#    data["DATE"][i]=df2['DATE'][i]
+ #   data["Downtime (hrs)"][i]=df2["Downtime (hrs)"][i]
     
-data
 
 
-
-#max min scaler
-scaler=MinMaxScaler(feature_range=(0,1))
-data.index=data.DATE
-data.drop('DATE',axis=1,inplace=True)
-final_data = data.values
-train_data=final_data[0:24,:]
-valid_data=final_data[24:,:]
-scaler=MinMaxScaler(feature_range=(0,1))
-scaled_data=scaler.fit_transform(final_data)
-x_train_data,y_train_data=[],[]
-for i in range(60,len(train_data)):
-    x_train_data.append(scaled_data[i-60:i,0])
-    y_train_data.append(scaled_data[i,0])
-
-x_train_data
-y_train_data
-
-#Long Short-Term Memory Model
-lstm_model=Sequential()
-lstm_model.add(LSTM(units=1,return_sequences=True,input_shape=(np.shape(x_train_data)[0],1)))
-lstm_model.add(LSTM(units=50))
-lstm_model.add(Dense(1))
-model_data=data[len(data)-len(valid_data)-20:].values
-model_data=model_data.reshape(-1,1)
-model_data=scaler.transform(model_data)
+training_set =  df.iloc[:155, 6:7].values
+test_set =  df.iloc[155:, 6:7].values
 
 
-#This step covers the preparation of the train data and the test data
-lstm_model.compile(loss='mean_squared_error',optimizer='adam')
-lstm_model.fit(x_train_data,y_train_data,epochs=1,batch_size=1,verbose=2)
-X_test=[]
-for i in range(2,model_data.shape[0]):
-    X_test.append(model_data[i-2:i,0])
-X_test=np.array(X_test)
-#X_test=np.reshape(X_test,(X_test.shape[0],X_test.shape[1],1))
+# Feature Scaling
+sc = MinMaxScaler(feature_range = (0, 1))
+training_set_scaled = sc.fit_transform(training_set)# Creating a data structure with 60 time-steps and 1 output
+X_train = []
+y_train = []
+for i in range(5,155):
+    X_train.append(training_set_scaled[i-5:i, 0])
+    y_train.append(training_set_scaled[i, 0])
+X_train, y_train = np.array(X_train), np.array(y_train)
+X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
+#(150, 5, 1)
+
+model = Sequential()#Adding the first LSTM layer and some Dropout regularisation
+model.add(LSTM(units = 5, return_sequences = True, input_shape = (X_train.shape[1], 1)))
+model.add(Dropout(0.2))# Adding a second LSTM layer and some Dropout regularisation
+model.add(LSTM(units = 5, return_sequences = True))
+model.add(Dropout(0.2))# Adding a third LSTM layer and some Dropout regularisation
+model.add(LSTM(units = 5, return_sequences = True))
+model.add(Dropout(0.2))# Adding a fourth LSTM layer and some Dropout regularisation
+model.add(LSTM(units = 5))
+model.add(Dropout(0.2))# Adding the output layer
+model.add(Dense(units = 1))# Compiling the RNN
+model.compile(optimizer = 'adam', loss = 'mean_squared_error')# Fitting the RNN to the Training set
+model.fit(X_train, y_train, epochs = 10, batch_size = 3)
+
+# Getting the predicted stock price of 2017
+dataset_train =  df.iloc[:159, 6:7]
+dataset_test =  df.iloc[:159, 6:7]
+dataset_total = pd.concat((dataset_train, dataset_test), axis = 0)
+inputs = dataset_total[len(dataset_total) - len(dataset_test) - 5:].values
+inputs = inputs.reshape(-1,1)
+inputs = sc.transform(inputs)
+X_test = []
+for i in range(5,164):
+    X_test.append(inputs[i-5:i, 0])
+X_test = np.array(X_test)
+X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+print(X_test.shape)
+# (120, 40, 1)
 
 
+predicted_stock_price = model.predict(X_test)
+predicted_stock_price = sc.inverse_transform(predicted_stock_price)
 
-#In this step, we are running the model using the test data we defined in the previous step
-predicted_stock_price=lstm_model.predict(X_test)
-predicted_stock_price=scaler.inverse_transform(predicted_stock_price)
+ #Visualising the results
+#plt.plot( df['DATE'],dataset_test.values, color = 'red', label = 'Real DOWN TIME PERIODS')
+#plt.plot( df['DATE'],predicted_stock_price, color = 'blue', label = 'Predicted Down times Hrs')
+#plt.xticks(np.arange(0,120,5))
+#plt.title('Down time period Prediction')
+#plt.xlabel('Time')
+#plt.ylabel('Down time period')
+#plt.legend()
+#plt.show()
+st.write("INCIDENT PREDICTION.")
+#with st.echo(code_location='below'):
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1)
 
+ax.scatter(
+   df["DATE"],
+   dataset_test.values,color = 'red', label = 'Real DOWN TIME PERIODS'
+  )
 
-#Prediction results
+ax.scatter(
+    df['DATE'],
+    predicted_stock_price, color = 'blue', label = 'Predicted Down times Hrs'
+    )
+ax.set_xlabel("DATE")
+ax.set_ylabel("Down time period")
 
-train_data=data[:200]
-valid_data=data[200:]
-valid_data['Predictions']=predicted_stock_price
-plt.plot(train_data["Close"])
-plt.plot(valid_data[['Close',"Predictions"]])
-
-
+st.write(fig)
