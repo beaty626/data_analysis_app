@@ -182,21 +182,8 @@ df2.dtypes
 #Index Column
 df.index = df['DATE']
 
-#plot  the data on a graph
-plt.plot(df['Downtime (hrs)'],label='Downtime tred')
-
 
 #Data preparation
-#df2 = df2.sort_index(ascending=True,axis=0)
-#data = pd.DataFrame(index=range(0,len(df2)),columns=['DATE','Downtime (hrs)'])
-#
-
-
-#for i in range(0,len(data)):
-#    data["DATE"][i]=df2['DATE'][i]
- #   data["Downtime (hrs)"][i]=df2["Downtime (hrs)"][i]
-    
-
 
 training_set =  df.iloc[:155, 6:7].values
 test_set =  df.iloc[155:, 6:7].values
@@ -227,7 +214,7 @@ model.add(Dense(units = 1))# Compiling the RNN
 model.compile(optimizer = 'adam', loss = 'mean_squared_error')# Fitting the RNN to the Training set
 model.fit(X_train, y_train, epochs = 10, batch_size = 3)
 
-# Getting the predicted stock price of 2017
+# Getting the predicted of down time hours.
 dataset_train =  df.iloc[:159, 6:7]
 dataset_test =  df.iloc[:159, 6:7]
 dataset_total = pd.concat((dataset_train, dataset_test), axis = 0)
