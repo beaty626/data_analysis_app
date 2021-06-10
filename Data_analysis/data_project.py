@@ -8,9 +8,7 @@ import time
 import datetime
 from datetime import datetime, date, time
 import matplotlib.pyplot as plt
-#import tkinter
 import matplotlib
-#matplotlib.use('TkAgg')
 from keras.models import Sequential
 from keras.layers import LSTM,Dropout,Dense
 
@@ -94,23 +92,23 @@ bar_chart = px.bar(df_group,
 
 st.plotly_chart(bar_chart)
 
-
+#ploting line chart for the downtime
 st.write("Downtime hrs line chart")
 df1 = pd.DataFrame({
 
   'date': df['DATE'],
   'Downtime (hrs)': df['Downtime (hrs)']
 })
-
+#Display date and downtime hours columns
 df1
-
+#plot the line chart
 st.line_chart(df1.rename(columns={'date':'index'}).set_index('index'))
 
 st.write("Downtime as per Depertment")
 # column the charts
 col1, col2 = st.beta_columns(2)
 
-##filter single category and add downtime
+##filter single category and add downtime counts
 col1 =df.groupby(["Responsible"])["Downtime (hrs)"].count()
 col1
 
