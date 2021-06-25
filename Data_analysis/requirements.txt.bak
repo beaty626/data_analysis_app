@@ -7,5 +7,5 @@ plotly==4.14.3
 scikit_learn==0.24.2
 opencv-python-headless==4.2.0.32
 Pillow >= 7
-TensorFlow-cpu==2.2
+TensorFlow==2.2
 xlrd==1.2.0

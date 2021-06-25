@@ -1,1 +1,1 @@
-web: sh setup.sh && streamlit run Data_analysis/data_project.py
+web: sh setup.sh && streamlit run data_project.py
